@@ -65,6 +65,7 @@ def _merge_options(func_name):
 
 def _project_auth_options():
     return {
+        "project_id": CONF.openstack.project_id,
         "project_name": CONF.openstack.project_name,
         "project_domain_name": CONF.openstack.project_domain_name,
     }
@@ -73,7 +74,7 @@ def _project_auth_options():
 def _common_auth_options():
     return {
         # Ex. {'auth_url': 'https://identity.localhost:5000/v3'}
-        "auth_url": f"{CONF.openstack.identity_endpoint}/{CONF.openstack.identity_api_version}",
+        "auth_url": f"{CONF.openstack.auth_url}",
     }
 
 

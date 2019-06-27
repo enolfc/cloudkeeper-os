@@ -77,6 +77,7 @@ OPENSTACK_OPT_USERNAME = "username"
 OPENSTACK_OPT_PASSWORD = "password"
 OPENSTACK_OPT_USER_DOMAIN_NAME = "user-domain-name"
 OPENSTACK_OPT_PROJECT_NAME = "project-name"
+OPENSTACK_OPT_PROJECT_ID = "project-id"
 OPENSTACK_OPT_PROJECT_DOMAIN_NAME = "project-domain-name"
 OPENSTACK_OPT_OIDC_ACCESS_TOKEN = "oidc-access-token"
 OPENSTACK_OPT_OIDC_IDENTITY_PROVIDER = "oidc-identity-provider"
@@ -94,8 +95,6 @@ OPENSTACK_AUTH_TYPES = {
             OPENSTACK_OPT_OIDC_ACCESS_TOKEN,
             OPENSTACK_OPT_OIDC_IDENTITY_PROVIDER,
             OPENSTACK_OPT_OIDC_PROTOCOL,
-            OPENSTACK_OPT_PROJECT_NAME,
-            OPENSTACK_OPT_PROJECT_DOMAIN_NAME,
         ),
     },
     "v3oidcrefreshtoken": {
@@ -107,8 +106,6 @@ OPENSTACK_AUTH_TYPES = {
             OPENSTACK_OPT_OIDC_IDENTITY_PROVIDER,
             OPENSTACK_OPT_OIDC_PROTOCOL,
             OPENSTACK_OPT_OIDC_DISCOVERY_ENDPOINT,
-            OPENSTACK_OPT_PROJECT_NAME,
-            OPENSTACK_OPT_PROJECT_DOMAIN_NAME,
         ),
     },
     "v3applicationcredential": {
@@ -126,8 +123,6 @@ OPENSTACK_AUTH_TYPES = {
             OPENSTACK_OPT_USERNAME,
             OPENSTACK_OPT_PASSWORD,
             OPENSTACK_OPT_USER_DOMAIN_NAME,
-            OPENSTACK_OPT_PROJECT_NAME,
-            OPENSTACK_OPT_PROJECT_DOMAIN_NAME,
         ),
     },
 }
@@ -155,15 +150,9 @@ OPENSTACK_OPTIONS = [
         required=True,
     ),
     cfg.StrOpt(
-        "identity-endpoint",
-        help="OpenStack Keystone endpoint",
-        default="https://identity.localhost:5000",
-        required=True,
-    ),
-    cfg.StrOpt(
-        "identity-api-version",
-        help="OpenStack Keystone API version",
-        default="v3",
+        "auth-url",
+        help="OpenStack Keystone authentication URL",
+        default="https://identity.localhost:5000/v3",
         required=True,
     ),
     cfg.StrOpt(
@@ -181,15 +170,25 @@ OPENSTACK_OPTIONS = [
     cfg.StrOpt(OPENSTACK_OPT_USERNAME, help="OpenStack username", secret=True),
     cfg.StrOpt(OPENSTACK_OPT_PASSWORD, help="OpenStack password", secret=True),
     cfg.StrOpt(
-        OPENSTACK_OPT_USER_DOMAIN_NAME, help="OpenStack user domain", default="default"
+        OPENSTACK_OPT_PASSWORD,
+        help="OpenStack password",
+        secret=True
     ),
     cfg.StrOpt(
-        OPENSTACK_OPT_PROJECT_NAME, help="OpenStack project name", default="default"
+        OPENSTACK_OPT_USER_DOMAIN_NAME,
+        help="OpenStack user domain",
+    ),
+    cfg.StrOpt(
+        OPENSTACK_OPT_PROJECT_ID,
+        help="OpenStack project id",
+    ),
+    cfg.StrOpt(
+        OPENSTACK_OPT_PROJECT_NAME,
+        help="OpenStack project name",
     ),
     cfg.StrOpt(
         OPENSTACK_OPT_PROJECT_DOMAIN_NAME,
         help="OpenStack project domain",
-        default="default",
     ),
     cfg.StrOpt(
         OPENSTACK_OPT_OIDC_ACCESS_TOKEN, help="OpenStack OIDC access token", secret=True
