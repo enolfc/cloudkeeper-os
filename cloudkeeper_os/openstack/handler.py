@@ -99,7 +99,7 @@ class Handler:
             image_dict["size"] = request["size"]
         if "checksum" in request:
             image_dict["checksum"] = request["checksum"]
-        if "container_format" in request:
+        if request.HasField("container_format"):
             try:
                 image_dict["container_format"] = cloudkeeper_pb2.Image.Format.Value(
                     request["container_format"].upper()
@@ -151,9 +151,12 @@ class Handler:
         format = cloudkeeper_pb2.Image.Format.Name(request.format).lower()
         image = self.client.images.update(image_id, disk_format=format)
 
-        container_format = cloudkeeper_pb2.Image.Format.Name(
-            request.container_format
-        ).lower()
+        if request.HasField("container_format"):
+            container_format = cloudkeeper_pb2.Image.Format.Name(
+                request.container_format
+            ).lower()
+        else:
+            container_format = "bare"
         image = self.client.images.update(image_id, container_format=container_format)
 
         if request.mode == cloudkeeper_pb2.Image.LOCAL:
