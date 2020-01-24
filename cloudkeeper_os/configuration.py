@@ -129,7 +129,7 @@ OPENSTACK_AUTH_TYPES = {
 OPENSTACK_GROUP = "openstack"
 OPENSTACK_OPTIONS = [
     cfg.StrOpt(
-        "region-name", help="OpenStack region", default="default", required=True
+        "region-name", help="OpenStack region", default=None, required=False
     ),
     cfg.StrOpt(
         "glance-interface",
