@@ -14,7 +14,7 @@ before_install:
   - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
   - export PATH="$HOME/.poetry/bin:$PATH"
 install:
-  - poetry install
+  - poetry install -v
 script:
   - poetry run invoke acceptance
-  - poetry run invoke test
+  - poetry run pytest tests
