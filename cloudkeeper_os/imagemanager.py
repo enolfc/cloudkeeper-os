@@ -43,24 +43,8 @@ class ApplianceManager(object):
     def __init__(self):
         self.mapping = mapping.Mapping()
 
-
-    def add_appliance(self, appliance):
-        """Add an appliance to glance
-        """
-        project_name = self.mapping.get_project_from_vo(appliance.vo)
-        if not project_name:
-            LOG.error("Cannot get a project name mapped to the "
-                      "vo '%s'" % appliance.vo)
-            return None
-
-        glance = openstack_client.get_glance_client(project_name)
-        if not glance:
-            LOG.error("Cannot get a glance client for the "
-                      "project '%s'" % project_name)
-            return None
-
-        LOG.info('Adding appliance: ' + appliance.title)
-
+    def upload_image(self, glance, glance_image, appliance, image_format, min_ram):
+        LOG.info('Uploading appliance: ' + appliance.title)
         LOG.debug("Image access mode: "
                   "%s" % appliance.image.Mode.Name(appliance.image.mode))
         if appliance.image.Mode.Name(appliance.image.mode) == 'REMOTE':
@@ -77,7 +61,6 @@ class ApplianceManager(object):
                 LOG.error("The image filename has not set been set "
                           "in the appliance '%s'." % appliance.identifier)
                 return None
-        image_format = appliance.image.Format.Name(appliance.image.format)
         try:
             image_data = open(filename, 'rb')
         except IOError as err:
@@ -86,50 +69,67 @@ class ApplianceManager(object):
             return None
         appliance.ClearField('image')
 
-        properties = utils.extract_appliance_properties(appliance)
-
-        min_ram = utils.convert_ram(int(properties.get("APPLIANCE_RAM", "0")))
-
-        properties[IMAGE_STATUS_TAG] = 'ACTIVE'
-
-        LOG.debug("Creating image '%s' (format: '%s', "
-                  "properties %s)" % (appliance.title,
-                                      str.lower(image_format),
-                                      properties)
-                 )
-
-        glance_image = glance.images.create(name=appliance.title,
-                                            disk_format=str.lower(image_format),
-                                            container_format="bare",
-                                            visibility=CONF.image_visibility,
-                                            min_ram=min_ram
-                                           )
         glance.images.upload(glance_image.id, image_data)
-        glance.images.update(glance_image.id, **properties)
-
         image_data.close()
-
         if remote_image:
             LOG.debug("Deleting retrieved image: '%s'" % (filename))
             os.unlink(filename)
+        return glance_image
 
+    def manage_appliance(self, appliance):
+        """Add an appliance to glance
+        """
+        project_name = self.mapping.get_project_from_vo(appliance.vo)
+        if not project_name:
+            LOG.error("Cannot get a project name mapped to the "
+                      "vo '%s'" % appliance.vo)
+            return None
+
+        glance = openstack_client.get_glance_client(project_name)
+        if not glance:
+            LOG.error("Cannot get a glance client for the "
+                      "project '%s'" % project_name)
+            return None
+
+        properties = utils.extract_appliance_properties(appliance)
+        min_ram = utils.convert_ram(int(properties.get("APPLIANCE_RAM", "0")))
+        properties[IMAGE_STATUS_TAG] = 'ACTIVE'
+
+        glance_images = utils.find_images(glance, appliance.identifier,
+                                          appliance.image_list_identifier)
+        if not glance_images:
+            # new appliance, first create the image in glance
+            image_format = appliance.image.Format.Name(appliance.image.format)
+            min_ram = utils.convert_ram(int(properties.get("APPLIANCE_RAM", "0")))
+            LOG.debug("Creating image '%s' (format: '%s)'" % (appliance.title,
+                                                              str.lower(image_format)))
+            glance_image = glance.images.create(name=appliance.title,
+                                                disk_format=str.lower(image_format),
+                                                container_format="bare",
+                                                visibility=CONF.image_visibility,
+                                                min_ram=min_ram
+                                                )
+            if not self.upload_image(glance, glance_image, appliance, image_format, min_ram):
+                return None
+        else:
+            glance_imace = glance_images.pop()
+            # there are still images for this appliance?
+            if glance_images:
+                LOG.error("Multiple images for the same appliance found!")
+                return None
+
+        glance.images.update(glance_image.id, **properties)
         return glance_image.id
 
     def update_appliance(self, appliance):
         """Update an appliance stored in glance
         """
         LOG.info("Updating appliance '%s'" % appliance.identifier)
-        image_list = self.mark_appliance_for_removal(appliance)
-        if not image_list:
-            LOG.error("Could not mark appliance for removal. Appliance will not be updated")
-            return None
-        LOG.debug("Old version of the '%s' appliance has been marked for "
-                  "removal" % appliance.identifier)
-        LOG.debug("Creating new release of the appliance")
-        image_id = self.add_appliance(appliance)
-        LOG.debug("The glance image '%s' has been created" % image_id)
-        return image_id
+        return self.manage_appliance(appliance)
 
+    def add_appliance(self, appliance):
+        LOG.info('Adding appliance: ' + appliance.title)
+        return self.manage_appliance(appliance)
 
     def mark_appliance_for_removal(self, appliance):
         """Mark an appliance in glance for removal
